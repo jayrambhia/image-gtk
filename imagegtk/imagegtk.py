@@ -1,18 +1,14 @@
-"""
-Trying to use pygtk to show images instead of pygame. Giving some problems.
-Need to work on threading. And add more functionality. I think I might replace
-pygame with pygtk.
-Created a small test for it. pygtk_image_test.py
-"""
 import gtk
 from threading import Thread
 import gobject
+import time
 gtk.gdk.threads_init()
 
 class DisplayImage():
     def __init__(self,title="SimpleCV"):
         self.img = None
         self.img_gtk = None
+        self.interval = 0.1
         self.mouseX = 0
         self.mouseY = 0
         self.mouse_rawX = 0
@@ -34,16 +30,21 @@ class DisplayImage():
         self.image_box.connect("motion_notify_event",self.motion_callback)
         self.image_box.connect("button_press_event",self.press_callback)
         self.image_box.connect("button_release_event",self.release_callback)
-        #self.thread_gtk()           # thread for gtk.main() . Need to 
-                                    # consider multiple images too.
         self.box.pack_start(self.image_box,False,False,2)
     
     def show_image(self,image):
+        if self.done == True and self.img_gtk is None:
+            self.done = False
+            self.__init__()
+        elif self.done == True:
+            self.done = False
         self.img = image
         if self.img_gtk is None:
             self.img_flag=0
             self.img_gtk = gtk.Image()          # Create gtk.Image() only once (first time)
+            print self.img_gtk
             self.image_box.add(self.img_gtk)    # Add Image in the box, only once (first time)
+            
         self.img_pixbuf = gtk.gdk.pixbuf_new_from_data(self.img.tostring(),
                                                         gtk.gdk.COLORSPACE_RGB,
                                                         False,
@@ -57,7 +58,12 @@ class DisplayImage():
         if not self.img_flag:
             self.thread_gtk()                   # gtk.main() only once (first time)
             self.img_flag=1                     # change flag
-        
+        while not self.isDone():
+            time.sleep(self.interval)
+    
+    def remove_image(self):
+        self.image_gtk = None
+    
     def thread_gtk(self):
         # changed this function. Improved threading.
         self.thrd = Thread(target=gtk.main, name = "GTK thread")
@@ -65,9 +71,10 @@ class DisplayImage():
         self.thrd.start()
     
     def leave_app(self,widget,data=None):
-        self.done = True
-        self.win.destroy()
-        gtk.main_quit()
+        #self.done = True
+        #self.win.destroy()
+        #gtk.main_quit()
+        self.quit()
     
     def release_callback(self,widget,event):
         self.mouseX = int(event.x)
@@ -117,5 +124,6 @@ class DisplayImage():
     
     def quit(self):
         self.done = True
+        self.img_gtk = None
         self.win.destroy()
         gtk.main_quit()
