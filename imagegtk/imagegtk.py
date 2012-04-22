@@ -5,7 +5,12 @@ import time
 gtk.gdk.threads_init()
 
 class DisplayImage():
-    def __init__(self,title="SimpleCV"):
+    def __init__(self,title="imagegtk"):
+        """
+        Constructs gtk window and adds widgets
+        parameters:
+            title - A string for window title
+        """
         self.img = None
         self.img_gtk = None
         self.img_thrd = None
@@ -22,6 +27,7 @@ class DisplayImage():
         self.mouseMiddle = 0
         self.leftButtonDown = 0
         self.rightButtonDown = 0
+        
         self.win = gtk.Window()
         self.win.set_title(title)
         self.win.connect("delete_event",self.leave_app)
@@ -35,15 +41,31 @@ class DisplayImage():
         self.box.pack_start(self.image_box,False,False,2)
         
     def show(self,image):
+        """
+        Summary:
+            Creates a thread to show image and calls show_image
+            
+        Parameters:
+            image - cv2.cv.iplimage or iplimage
+        """
         if self.img_thrd:
             # Thread exists. Hence change the flag to end the thread.
             self.img_thrd_flag = False
-            #self.img_thrd.join()
-        # Create a new thread to show the image
-        self.img_thrd = Thread(target = self.show_image,args=(image,),name="show_image")
+        self.img_thrd = Thread(target = self.__showimage,args=(image,),name="show_image")
         self.img_thrd.start()
     
-    def show_image(self,image):
+    def __showimage(self,image):
+        """
+        Summary:
+            Creates pixbuf from image data. Sets image from pixbuf.
+            Creates a thread to call gtk.main()
+            
+        Parameters:
+            image - cv2.cv.iplimage or iplimage
+            
+        NOTE:
+            This function shouldn't be called directly
+        """
         if self.done == True and self.img_gtk is None:
             self.done = False
             self.__init__()
@@ -55,9 +77,8 @@ class DisplayImage():
         
         if self.img_gtk is None:
             self.img_flag=0
-            self.img_gtk = gtk.Image()          # Create gtk.Image() only once (first time)
-            #print self.img_gtk
-            self.image_box.add(self.img_gtk)    # Add Image in the box, only once (first time)
+            self.img_gtk = gtk.Image()
+            self.image_box.add(self.img_gtk)
             
         self.img_pixbuf = gtk.gdk.pixbuf_new_from_data(self.img.tostring(),
                                                         gtk.gdk.COLORSPACE_RGB,
@@ -71,41 +92,51 @@ class DisplayImage():
         self.win.show_all()
         
         if not self.img_flag:
-            self.thread_gtk()                   # gtk.main() only once (first time)
-            self.img_flag=1                     # change flag
+            self.__threadgtk()
+            self.img_flag=1                     
             
-        #print self.img_thrd_flag,"flag"
-        #print not self.done,"done"
         while (not self.done and self.img_thrd_flag) :
             time.sleep(self.interval/2)
     
-    def remove_image(self):
-        self.image_gtk = None
-    
-    def thread_gtk(self):
-        # changed this function. Improved threading.
+    def __threadgtk(self):
+        """
+        Summary:
+            Creates a thread for gtk.main()
+        """
         self.thrd = Thread(target=gtk.main, name = "GTK thread")
         self.thrd.daemon = True
         self.thrd.start()
     
     def leave_app(self,widget,data=None):
+        """
+        Summary:
+            calls quit.
+        Note:
+            This function must be called with a callback.
+        """
         self.quit()
     
     def release_callback(self,widget,event):
+        """
+        Callback function when mouse button is released.
+        Updates mouseX, mouseY, mouse_rawX, mouse_rawY
+        """
         self.mouseX = int(event.x)
         self.mouseY = int(event.y)
         self.mouse_rawX = int(event.x_root)
         self.mouse_rawY = int(event.y_root)
         self.setReleaseButtonState(event.button)
-        #print self.mouseX, self.mouseY, self.mouse_rawX, self.mouse_rawY,"leave"
     
     def press_callback(self,widget,event):
+        """
+        Callback function when mouse button is pressed.
+        Updates mouseX, mouseY, mouse_rawX, mouse_rawY
+        """
         self.mouseX = int(event.x)
         self.mouseY = int(event.y)
         self.mouse_rawX = int(event.x_root)
         self.mouse_rawY = int(event.y_root)
         self.setPressButtonState(event.button)
-        #print self.mouseX, self.mouseY, self.mouse_rawX, self.mouse_rawY,"press"
         
     def setPressButtonState(self, mode):
         if mode == 1:
@@ -128,17 +159,25 @@ class DisplayImage():
             self.mouseMiddle = 0
         
     def motion_callback(self,widget,event):
+        """
+        Callback function when mouse is moved.
+        Updates mouseX, mouseY, mouse_rawX, mouse_rawY
+        """
         self.mouseX = int(event.x)
         self.mouseY = int(event.y)
         self.mouse_rawX = int(event.x_root)
         self.mouse_rawY = int(event.y_root)
-        #print self.mouseX, self.mouseY, self.mouse_rawX, self.mouse_rawY,"motion"
     
     def isDone(self):
+        """
+        Check whether window exists or not
+        """
         return self.done
     
     def quit(self):
-        self.done = True
+        """
+        Destroys window, image.
+        """
         self.img_gtk = None
         self.win.destroy()
-        #gtk.main_quit()
+        self.done = True
