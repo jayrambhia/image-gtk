@@ -1,4 +1,4 @@
-from pygtk_image import *
+from imagegtk import *
 from SimpleCV import *
 
 def do_done(widget,d,data=None):
