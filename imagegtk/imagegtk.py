@@ -141,4 +141,4 @@ class DisplayImage():
         self.done = True
         self.img_gtk = None
         self.win.destroy()
-        gtk.main_quit()
+        #gtk.main_quit()
