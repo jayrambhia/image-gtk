@@ -16,8 +16,8 @@ def imagetest():
     but2 = gtk.Button("done")
     d.box.pack_start(but2,False,False,2)
     but2.connect("clicked",do_done,d)
-    d.show_image(i.toRGB().getBitmap())
-    d.show_image(i.toGray().getBitmap())
+    d.show(i.toRGB().getBitmap())
+    d.show(i.toGray().getBitmap())
 
 imagetest()
 
