@@ -9,6 +9,8 @@ class DisplayImage():
         """
         Constructs gtk window and adds widgets
         parameters:
+            winsize - A tuple containing 2 integers to set window size
+            imgsize - A tuple containing 2 integers to set image size
             title - A string for window title
         """
         self.img = None
@@ -22,11 +24,11 @@ class DisplayImage():
         self.mouse_rawY = 0
         self.done = False
         self.thrd = None
-        self.mouseLeft = 0
-        self.mouseRight = 0
-        self.mouseMiddle = 0
-        self.leftButtonDown = 0
-        self.rightButtonDown = 0
+        self.mouseLeft = False
+        self.mouseRight = False
+        self.mouseMiddle = False
+        self.leftButtonDown = False
+        self.rightButtonDown = False
         self.winsize = winsize
         self.imgsize = imgsize
         
@@ -34,14 +36,14 @@ class DisplayImage():
         self.win.set_title(title)
         if self.winsize is not None:
             self.win.set_size_request(self.winsize[0],self.winsize[1])
-        self.win.connect("delete_event",self.leave_app)
+        self.win.connect("delete_event",self.__quit)
         self.box = gtk.VBox(False,2)
         self.win.add(self.box)
         self.box.show()
         self.image_box = gtk.EventBox()
-        self.image_box.connect("motion_notify_event",self.motion_callback)
-        self.image_box.connect("button_press_event",self.press_callback)
-        self.image_box.connect("button_release_event",self.release_callback)
+        self.image_box.connect("motion_notify_event",self.__motioncallback)
+        self.image_box.connect("button_press_event",self.__presscallback)
+        self.image_box.connect("button_release_event",self.__releasecallback)
         self.box.pack_start(self.image_box,False,False,2)
         
     def show(self,image,imgsize=None):
@@ -50,7 +52,7 @@ class DisplayImage():
             Creates a thread to show image and calls show_image
             
         Parameters:
-            image - cv2.cv.iplimage or iplimage
+            image - cv2.cv.iplimage or iplimage or filename
         """
         if imgsize is not None and type(imgsize) is tuple:
             self.imgsize = imgsize
@@ -87,7 +89,11 @@ class DisplayImage():
             self.image_box.add(self.img_gtk)
         
         if type(self.img) == str:
-            self.img_pixbuf = gtk.gdk.pixbuf_new_from_file(self.img)
+            try:
+                self.img_pixbuf = gtk.gdk.pixbuf_new_from_file(self.img)
+            except gobject.GError:
+                print "Error: %s not found" % self.img
+                return
         else:
             self.img_pixbuf = gtk.gdk.pixbuf_new_from_data(self.img.tostring(),
                                                         gtk.gdk.COLORSPACE_RGB,
@@ -98,7 +104,7 @@ class DisplayImage():
                                                         self.img.width*self.img.nChannels)
         if self.imgsize is not None:
             self.img_pixbuf = self.__resizeImage(self.img_pixbuf,self.imgsize)
-            
+        
         self.img_gtk.set_from_pixbuf(self.img_pixbuf)
         self.img_gtk.show()
         self.win.show_all()
@@ -119,7 +125,7 @@ class DisplayImage():
         self.thrd.daemon = True
         self.thrd.start()
     
-    def leave_app(self,widget,data=None):
+    def __quit(self,widget,data=None):
         """
         Summary:
             calls quit.
@@ -128,7 +134,7 @@ class DisplayImage():
         """
         self.quit()
     
-    def release_callback(self,widget,event):
+    def __releasecallback(self,widget,event):
         """
         Callback function when mouse button is released.
         Updates mouseX, mouseY, mouse_rawX, mouse_rawY
@@ -137,9 +143,9 @@ class DisplayImage():
         self.mouseY = int(event.y)
         self.mouse_rawX = int(event.x_root)
         self.mouse_rawY = int(event.y_root)
-        self.setReleaseButtonState(event.button)
+        self.__setReleaseButtonState(event.button)
     
-    def press_callback(self,widget,event):
+    def __presscallback(self,widget,event):
         """
         Callback function when mouse button is pressed.
         Updates mouseX, mouseY, mouse_rawX, mouse_rawY
@@ -148,29 +154,29 @@ class DisplayImage():
         self.mouseY = int(event.y)
         self.mouse_rawX = int(event.x_root)
         self.mouse_rawY = int(event.y_root)
-        self.setPressButtonState(event.button)
+        self.__setPressButtonState(event.button)
         
-    def setPressButtonState(self, mode):
+    def __setPressButtonState(self, mode):
         if mode == 1:
-            self.leftButtonDown = 1
-            self.mouseLeft = 1
+            self.leftButtonDown = True
+            self.mouseLeft = True
         elif mode == 2:
-            self.rightButtonDown = 1
-            self.mouseLeft = 1
+            self.rightButtonDown = True
+            self.mouseLeft = True
         elif mode == 3:
-            self.mouseMiddle = 1
+            self.mouseMiddle = True
             
-    def setReleaseButtonState(self, mode):
+    def __setReleaseButtonState(self, mode):
         if mode == 1:
-            self.leftButtonDown = 0
-            self.mouseLeft = 0
+            self.leftButtonDown = False
+            self.mouseLeft = False
         elif mode == 2:
-            self.rightButtonDown = 0
-            self.mouseLeft = 0
+            self.rightButtonDown = False
+            self.mouseLeft = False
         elif mode == 3:
-            self.mouseMiddle = 0
+            self.mouseMiddle = False
         
-    def motion_callback(self,widget,event):
+    def __motioncallback(self,widget,event):
         """
         Callback function when mouse is moved.
         Updates mouseX, mouseY, mouse_rawX, mouse_rawY
@@ -186,6 +192,15 @@ class DisplayImage():
         """
         return self.done
     
+    def callback_quit(self,widget,data=None):
+        """
+        Summary:
+            calls quit.
+        Note:
+            This function must be called with a callback.
+        """
+        self.quit()
+        
     def quit(self):
         """
         Destroys window, image.
