@@ -5,7 +5,13 @@
 A library to build a gtk GUI around an image. An easy way to show multiple images simultaneously with customizable GUI.
 
 ####Examples:
-#####1. OpenCV
+#####1. From file
+    
+    image = "python-logo.png"
+    d = DisplayImage()
+    d.show(image)
+    
+#####2. OpenCV
 
     im = LoadImage(filename)
     image = CreateImage((im.width,im.height),im.depth,im.channels)
@@ -22,7 +28,7 @@ A library to build a gtk GUI around an image. An easy way to show multiple image
     
     d.show(image)
     
-#####2. SimpleCV
+#####3. SimpleCV
 
     im = Image("Lenna")
     image = im.toRGB.getBitmap()

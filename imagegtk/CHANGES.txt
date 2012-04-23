@@ -1,0 +1,9 @@
+23 April, 2012
+Add a parameter to set size of the window
+Add a function to change window title
+Set size of the window
+Set size of the image (Included in __init__, show()) 
+Show image from files
+few sample images added
+
+

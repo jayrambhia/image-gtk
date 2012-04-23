@@ -5,7 +5,7 @@ import time
 gtk.gdk.threads_init()
 
 class DisplayImage():
-    def __init__(self,title="imagegtk"):
+    def __init__(self,winsize=None,imgsize=None,title="imagegtk"):
         """
         Constructs gtk window and adds widgets
         parameters:
@@ -27,9 +27,13 @@ class DisplayImage():
         self.mouseMiddle = 0
         self.leftButtonDown = 0
         self.rightButtonDown = 0
+        self.winsize = winsize
+        self.imgsize = imgsize
         
         self.win = gtk.Window()
         self.win.set_title(title)
+        if self.winsize is not None:
+            self.win.set_size_request(self.winsize[0],self.winsize[1])
         self.win.connect("delete_event",self.leave_app)
         self.box = gtk.VBox(False,2)
         self.win.add(self.box)
@@ -40,7 +44,7 @@ class DisplayImage():
         self.image_box.connect("button_release_event",self.release_callback)
         self.box.pack_start(self.image_box,False,False,2)
         
-    def show(self,image):
+    def show(self,image,imgsize=None):
         """
         Summary:
             Creates a thread to show image and calls show_image
@@ -48,6 +52,8 @@ class DisplayImage():
         Parameters:
             image - cv2.cv.iplimage or iplimage
         """
+        if imgsize is not None and type(imgsize) is tuple:
+            self.imgsize = imgsize
         if self.img_thrd:
             # Thread exists. Hence change the flag to end the thread.
             self.img_thrd_flag = False
@@ -79,14 +85,20 @@ class DisplayImage():
             self.img_flag=0
             self.img_gtk = gtk.Image()
             self.image_box.add(self.img_gtk)
-            
-        self.img_pixbuf = gtk.gdk.pixbuf_new_from_data(self.img.tostring(),
+        
+        if type(self.img) == str:
+            self.img_pixbuf = gtk.gdk.pixbuf_new_from_file(self.img)
+        else:
+            self.img_pixbuf = gtk.gdk.pixbuf_new_from_data(self.img.tostring(),
                                                         gtk.gdk.COLORSPACE_RGB,
                                                         False,
                                                         self.img.depth,
                                                         self.img.width,
                                                         self.img.height,
                                                         self.img.width*self.img.nChannels)
+        if self.imgsize is not None:
+            self.img_pixbuf = self.__resizeImage(self.img_pixbuf,self.imgsize)
+            
         self.img_gtk.set_from_pixbuf(self.img_pixbuf)
         self.img_gtk.show()
         self.win.show_all()
@@ -181,3 +193,82 @@ class DisplayImage():
         self.img_gtk = None
         self.win.destroy()
         self.done = True
+        
+    def change_title(self,title=None):
+        """
+        Change the title of the window.
+        Parameter:
+            title - A string
+        
+        Changes the title of the window
+        
+        Example:
+            d = DisplayImage(title="imagegtk")
+            d.change_title("my title")
+        """
+        if title is not None:
+            self.win.set_title(title)
+            self.win.show_all()
+    
+    def change_size(self,size):
+        """
+        Change the size of the window.
+        Parameter:
+            size - a tuple containing 2 integers
+        
+        Changes the size of the window
+        
+        Example:
+            d = DisplayImage(size=(800,600))
+            d.change_size((400,300))
+        """
+        if size:
+            self.win_size = size
+            self.win.set_size_request(self.win_size[0], self.win_size[1])
+            self.win.show_all()
+    
+    def __resizeImage(self,pixbuf,size):
+        """
+        Parameters:
+            pixbuf - gtk.gdk.pixbuf
+            size - a tuple containing 2 integers
+            
+        Returns resized gtk.gdk.pixbuf
+        """
+        new_pixbuf = pixbuf.scale_simple(size[0],size[1],gtk.gdk.INTERP_BILINEAR)
+        return new_pixbuf
+    
+    def set_image_size(self,size):
+        """
+        To set or change the size of the image.
+        
+        Parameters:
+            size - A tuple of two integers
+            
+        Example:
+            display = DisplayImage()
+            i = Image("lenna")
+            display.show(i.toRGB().getBitmap)
+            display.set_image_size((400,300))
+            ===============================================================
+            
+            im = LoadImage("filename.jpg")
+            image = CreateImage((im.width,im.height),im.depth,im.channels)
+            CvtColor(im,image,CV_BGR2RGB)
+            display = DisplayImage()
+            display.show(image)
+            display.set_image_size((400,300))
+            ===============================================================
+        """
+        #http://faq.pygtk.org/index.py?req=show&file=faq08.006.htp
+        if size:
+            # Need to add more something to choose for interp_type
+            # current interp_type = gtk.gdk.INTERP_BILINEAR
+            # http://www.pygtk.org/docs/pygtk/class-gdkpixbuf.html#method-gdkpixbuf--scale-simple
+            # Should I change the original pixbuf or not ?
+            #new_buf = self.img_pixbuf.scale_simple(size[0],size[1],gtk.gdk.INTERP_BILINEAR)
+            new_buf = self.__resizeImage(self.img_pixbuf,size)
+            self.imgsize = size
+            self.img_gtk.set_from_pixbuf(new_buf)
+            self.img_gtk.show()
+            
