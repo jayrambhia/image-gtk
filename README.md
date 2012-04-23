@@ -5,6 +5,9 @@
 A library to build a gtk GUI around an image. An easy way to show multiple images simultaneously with customizable GUI.
 Mainly built for the purpose to show images in OpenCV or SimpleCV with customizable GUI.
 
+##[wiki] (https://github.com/jayrambhia/image-gtk/wiki/imagegtk)
+##[docs](https://github.com/jayrambhia/image-gtk/wiki/docs)
+
 ####Examples:
 #####1. From file
     
